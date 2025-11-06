@@ -2,14 +2,23 @@ import boto3
 import json
 
 def lambda_handler(event, context):
-    # Entrada (JSON desde POST)
-    body = json.loads(event['body'])
-    nombre_bucket = body.get('bucket')
+    # --- Entrada ---
+    try:
+        body = json.loads(event.get('body', '{}'))
+        nombre_bucket = body.get('bucket')
+    except Exception as e:
+        return {
+            'statusCode': 400,
+            'body': json.dumps({'mensaje': f'Error en el body: {str(e)}'})
+        }
 
     if not nombre_bucket:
-        return {'statusCode': 400, 'mensaje': 'Falta el nombre del bucket.'}
+        return {
+            'statusCode': 400,
+            'body': json.dumps({'mensaje': 'Falta el nombre del bucket.'})
+        }
 
-    # Proceso
+    # --- Proceso ---
     s3 = boto3.client('s3')
     try:
         s3.create_bucket(Bucket=nombre_bucket)
@@ -19,8 +28,10 @@ def lambda_handler(event, context):
         mensaje = str(e)
         codigo = 500
 
-    # Salida
+    # --- Salida ---
     return {
         'statusCode': codigo,
-        'mensaje': mensaje
+        'headers': {'Content-Type': 'application/json'},
+        'body': json.dumps({'mensaje': mensaje})
     }
+
